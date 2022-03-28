@@ -17,6 +17,9 @@ In search.py, you will implement generic search algorithms which are called by
 Pacman agents (in searchAgents.py).
 """
 
+from platform import node
+from shutil import move
+from unittest.mock import mock_open
 import util
 
 class SearchProblem:
@@ -87,17 +90,79 @@ def depthFirstSearch(problem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    moves_stack = util.Stack()
+    moves_stack.push([])
+
+    node_expanded = []
+
+    state = util.Stack()
+    state.push(problem.getStartState())
+
+    while not state.isEmpty():
+        moves = moves_stack.pop()
+        curr = state.pop()     # now position
+
+        if curr not in node_expanded:
+            node_expanded.append(curr)
+            if problem.isGoalState(curr): 
+                # Success!
+                return moves
+
+            for position, direction, cost in problem.getSuccessors(curr):
+                moves_stack.push(moves + [direction])
+                state.push(position)
+
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    moves_queue = util.Queue()
+    moves_queue.push([])
+    node_expanded = []
+
+    state = util.Queue()
+    state.push(problem.getStartState())
+
+    while not state.isEmpty():
+        moves = moves_queue.pop()
+        curr  = state.pop()
+
+        if curr not in node_expanded:
+            node_expanded.append(curr)
+
+            if problem.isGoalState(curr):
+                return moves
+
+            for position, direction, cost in problem.getSuccessors(curr):
+                moves_queue.push(moves+[direction])
+                state.push(position)
+                
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    moves_priorityqueue = util.PriorityQueue()
+    moves_priorityqueue.push([], 0)
+    node_expanded = []
+    state = util.PriorityQueue()
+    state.push(problem.getStartState(), 0)
+
+    while not state.isEmpty():
+        moves = moves_priorityqueue.pop()
+        curr = state.pop()
+
+        if curr not in node_expanded:
+            node_expanded.append(curr)
+            if problem.isGoalState(curr):
+                return moves
+    
+            for position, direction, cost in problem.getSuccessors(curr):
+                moves_priorityqueue.push(moves+[direction], problem.getCostOfActions(moves)+cost)
+                state.push(position, problem.getCostOfActions(moves)+cost)
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -109,7 +174,26 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    moves_priorityqueue = util.PriorityQueue()
+    moves_priorityqueue.push([], 0)
+    node_expanded = []
+    state = util.PriorityQueue()
+    state.push(problem.getStartState(), 0)
+
+    while not state.isEmpty():
+        moves = moves_priorityqueue.pop()
+        curr = state.pop()
+
+        if curr not in node_expanded:
+            node_expanded.append(curr)
+            if problem.isGoalState(curr):
+                return moves
+    
+            for position, direction, cost in problem.getSuccessors(curr):
+                moves_priorityqueue.push(moves+[direction], problem.getCostOfActions(moves)+heuristic(position, problem))
+                state.push(position, problem.getCostOfActions(moves)+heuristic(position, problem))
+
 
 
 # Abbreviations
