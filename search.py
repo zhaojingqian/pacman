@@ -191,8 +191,8 @@ def aStarSearch(problem, heuristic=nullHeuristic):
                 return moves
     
             for position, direction, cost in problem.getSuccessors(curr):
-                moves_priorityqueue.push(moves+[direction], problem.getCostOfActions(moves)+heuristic(position, problem))
-                state.push(position, problem.getCostOfActions(moves)+heuristic(position, problem))
+                moves_priorityqueue.push(moves+[direction], problem.getCostOfActions(moves)+cost+heuristic(position, problem))
+                state.push(position, problem.getCostOfActions(moves)+cost+heuristic(position, problem))
 
 
 
