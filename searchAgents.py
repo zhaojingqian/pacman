@@ -34,6 +34,7 @@ description for details.
 Good luck and happy searching!
 """
 
+from calendar import c
 from game import Directions
 from game import Agent
 from game import Actions
@@ -378,8 +379,38 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    # return 0 # Default to trivial solution
+    height, width = walls.height-2, walls.width-2
+    corner_state = []       
+    cost = 1e9
+    for corner in corners:
+        if corner not in state[1]:
+            corner_state.append(corner)
+            cost = min(cost, util.manhattanDistance(state[0], corner))
+
+    if len(corner_state) == 4:
+        return cost + 2*(min(height, width)-1) + (max(height, width)-1)
+
+    if len(corner_state) == 3:
+        return cost + (min(height, width)-1) + (max(height, width)-1)
+
+    if len(corner_state) == 2:
+        return cost + util.manhattanDistance(corner_state[0], corner_state[1])
+
+    if len(corner_state) == 1:
+        return cost
     
+    return 0
+    # cost = 0
+    # maxCost = 0
+
+    # corner_state = state[1]
+    # for pos in corners:
+    #     if pos not in corner_state: 
+    #         cost = util.manhattanDistance(pos, state[0])
+    #         maxCost = max(maxCost, cost)
+    
+    # return maxCost
+
 
 
 class AStarCornersAgent(SearchAgent):
