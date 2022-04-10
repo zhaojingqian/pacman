@@ -362,6 +362,42 @@ class CornersProblem(search.SearchProblem):
         return len(actions)
 
 
+    def getnextstate(self, state):
+        successors = []
+        for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+            x,y = state
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextState = (nextx, nexty)
+                cost = 1
+                successors.append( ( nextState, action, cost) )
+
+        return successors
+
+    def bfs(self, xy1, xy2):
+        moves_queue = util.Queue()
+        moves_queue.push([])
+        node_expanded = []
+
+        state = util.Queue()
+        state.push(xy1)
+
+        while not state.isEmpty():
+            moves = moves_queue.pop()
+            curr  = state.pop()
+
+            if curr not in node_expanded:
+                node_expanded.append(curr)
+
+                if curr == xy2:
+                    return len(moves)
+
+                for position, direction, cost in self.getnextstate(curr):
+                    moves_queue.push(moves+[direction])
+                    state.push(position)
+
+
 def cornersHeuristic(state, problem):
     """
     A heuristic for the CornersProblem that you defined.
@@ -379,37 +415,39 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    height, width = walls.height-2, walls.width-2
-    corner_state = []       
-    cost = 1e9
-    for corner in corners:
-        if corner not in state[1]:
-            corner_state.append(corner)
-            cost = min(cost, util.manhattanDistance(state[0], corner))
+    # height, width = walls.height-2, walls.width-2
+    # corner_state = []       
+    # cost = 1e9
+    # for corner in corners:
+    #     if corner not in state[1]:
+    #         corner_state.append(corner)
+    #         cost = min(cost, util.manhattanDistance(state[0], corner))
 
-    if len(corner_state) == 4:
-        return cost + 2*(min(height, width)-1) + (max(height, width)-1)
+    # if len(corner_state) == 4:
+    #     return cost + 2*(min(height, width)-1) + (max(height, width)-1)
 
-    if len(corner_state) == 3:
-        return cost + (min(height, width)-1) + (max(height, width)-1)
+    # if len(corner_state) == 3:
+    #     return cost + (min(height, width)-1) + (max(height, width)-1)
 
-    if len(corner_state) == 2:
-        return cost + util.manhattanDistance(corner_state[0], corner_state[1])
+    # if len(corner_state) == 2:
+    #     return cost + util.manhattanDistance(corner_state[0], corner_state[1])
 
-    if len(corner_state) == 1:
-        return cost
+    # if len(corner_state) == 1:
+    #     return cost
     
-    return 0
-    # cost = 0
-    # maxCost = 0
+    # return 0
 
-    # corner_state = state[1]
-    # for pos in corners:
-    #     if pos not in corner_state: 
-    #         cost = util.manhattanDistance(pos, state[0])
-    #         maxCost = max(maxCost, cost)
+
+    cost = 0
+    maxCost = 0
+
+    corner_state = state[1]
+    for pos in corners:
+        if pos not in corner_state: 
+            cost = problem.bfs(pos, state[0])
+            maxCost = max(maxCost, cost)
     
-    # return maxCost
+    return maxCost
 
 
 
