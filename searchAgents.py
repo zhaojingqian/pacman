@@ -289,7 +289,6 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
-        # self.visit = [0, 0, 0, 0]
 
 
     def getStartState(self):
@@ -415,40 +414,40 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    # height, width = walls.height-2, walls.width-2
-    # corner_state = []       
-    # cost = 1e9
-    # for corner in corners:
-    #     if corner not in state[1]:
-    #         corner_state.append(corner)
-    #         cost = min(cost, util.manhattanDistance(state[0], corner))
+    height, width = walls.height-2, walls.width-2
+    corner_state = []       
+    cost = 1e9
+    for corner in corners:
+        if corner not in state[1]:
+            corner_state.append(corner)
+            cost = min(cost, util.manhattanDistance(state[0], corner))
 
-    # if len(corner_state) == 4:
-    #     return cost + 2*(min(height, width)-1) + (max(height, width)-1)
+    if len(corner_state) == 4:
+        return cost + 2*(min(height, width)-1) + (max(height, width)-1)
 
-    # if len(corner_state) == 3:
-    #     return cost + (min(height, width)-1) + (max(height, width)-1)
+    if len(corner_state) == 3:
+        return cost + (min(height, width)-1) + (max(height, width)-1)
 
-    # if len(corner_state) == 2:
-    #     return cost + util.manhattanDistance(corner_state[0], corner_state[1])
+    if len(corner_state) == 2:
+        return cost + util.manhattanDistance(corner_state[0], corner_state[1])
 
-    # if len(corner_state) == 1:
-    #     return cost
+    if len(corner_state) == 1:
+        return cost
     
-    # return 0
+    return 0
 
 
-    cost = 0
-    maxCost = 0
+    # cost = 0
+    # maxCost = 0
 
-    corner_state = state[1]
-    for pos in corners:
-        if pos not in corner_state: 
-            cost = problem.bfs(pos, state[0])
-            maxCost = max(maxCost, cost)
+    # corner_state = state[1]
+    # for pos in corners:
+    #     if pos not in corner_state: 
+    #         cost = problem.bfs(pos, state[0])
+    #         # cost = util.manhattanDistance(pos, state[0])
+    #         maxCost = max(maxCost, cost)
     
-    return maxCost
-
+    # return maxCost
 
 
 class AStarCornersAgent(SearchAgent):
