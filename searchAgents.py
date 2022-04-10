@@ -289,7 +289,7 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
-
+        self.gameState = startingGameState
 
     def getStartState(self):
         """
@@ -361,42 +361,6 @@ class CornersProblem(search.SearchProblem):
         return len(actions)
 
 
-    def getnextstate(self, state):
-        successors = []
-        for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            x,y = state
-            dx, dy = Actions.directionToVector(action)
-            nextx, nexty = int(x + dx), int(y + dy)
-            if not self.walls[nextx][nexty]:
-                nextState = (nextx, nexty)
-                cost = 1
-                successors.append( ( nextState, action, cost) )
-
-        return successors
-
-    def bfs(self, xy1, xy2):
-        moves_queue = util.Queue()
-        moves_queue.push([])
-        node_expanded = []
-
-        state = util.Queue()
-        state.push(xy1)
-
-        while not state.isEmpty():
-            moves = moves_queue.pop()
-            curr  = state.pop()
-
-            if curr not in node_expanded:
-                node_expanded.append(curr)
-
-                if curr == xy2:
-                    return len(moves)
-
-                for position, direction, cost in self.getnextstate(curr):
-                    moves_queue.push(moves+[direction])
-                    state.push(position)
-
-
 def cornersHeuristic(state, problem):
     """
     A heuristic for the CornersProblem that you defined.
@@ -443,7 +407,7 @@ def cornersHeuristic(state, problem):
     # corner_state = state[1]
     # for pos in corners:
     #     if pos not in corner_state: 
-    #         cost = problem.bfs(pos, state[0])
+    #         cost = mazeDistance(pos, state[0], problem.gameState)
     #         # cost = util.manhattanDistance(pos, state[0])
     #         maxCost = max(maxCost, cost)
     
@@ -573,7 +537,28 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        moves_quene = util.Queue()
+        moves = []
+        positions = util.Queue()
+        expend_nodes = []
+        
+        positions.push(startPosition)
+        moves_quene.push([])
+        
+        while not positions.isEmpty():
+            current_position = positions.pop()
+            moves = moves_quene.pop()
+            
+            if current_position not in expend_nodes:
+                expend_nodes.append(current_position)
+
+                if problem.isGoalState(current_position):
+                    return moves
+                
+                for position, direction, cost in problem.getSuccessors(current_position):
+                    positions.push(position)
+                    moves_quene.push(moves + [direction])
+        # util.raiseNotDefined()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -609,7 +594,8 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return self.food[x][y] == True
+        # util.raiseNotDefined()
 
 def mazeDistance(point1, point2, gameState):
     """
