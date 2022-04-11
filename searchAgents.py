@@ -34,7 +34,12 @@ description for details.
 Good luck and happy searching!
 """
 
-from calendar import c
+# from calendar import c
+from cmath import inf
+# from sys import maxsize
+# from turtle import pos
+# from numpy import argmax, inner, zeros
+from numpy import argmax, zeros
 from game import Directions
 from game import Agent
 from game import Actions
@@ -436,6 +441,70 @@ class FoodSearchProblem:
         self._expanded = 0 # DO NOT CHANGE
         self.heuristicInfo = {} # A dictionary for the heuristic to store information
 
+        """我的额外参数"""
+        top, right = self.walls.height, self.walls.width
+        ifFood = startingGameState.getFood()
+        # print('height', top)
+        # print('width', right)
+        # 获取初始食物的位置，建立初始食物对编号的映射，位置对编号的映射
+        siteMapping = {}
+        foodMapping = {}
+        
+        for x in range(1, right-1):
+            for y in range(1, top-1):
+                if ifFood[x][y] == True:
+                    foodMapping[(x, y)] = len(foodMapping)  # 食物对编号的映射
+                if not self.walls[x][y]:
+                    siteMapping[(x, y)] = len(siteMapping)  # 位置对编号的映射
+        foods = list(foodMapping.keys())
+        sites = list(siteMapping.keys())
+        self.heuristicInfo['foodMapping'] = foodMapping
+        self.heuristicInfo['siteMapping'] = siteMapping
+        # print(foodMapping)
+        # print(foods)
+
+        # print(ifFood, '\n')
+        # print(self.walls, '\n')
+        # for i in range(top-1, -1, -1):
+        #     s = ''
+        #     for j in range(right):
+        #         s += 'T' if self.walls[j][i] else 'F'
+        #     print(s)
+        # 可行位置到糖的曼哈顿距离
+        dist2 = zeros((len(sites), len(foods)))
+        # for outer in range(len(sites)):
+        #     for inner in range(len(foods)):
+        #         dist2[outer][inner] = util.manhattanDistance((sites[outer][0], sites[outer][1]), (foods[inner][0], foods[inner][1]))
+        # print('Dist2', dist2)
+        for site in sites:
+            siteIdx = siteMapping[site]
+            tmpDist = self.breadFirst(site)
+            # print(site, tmpDist)
+            for food in foods:
+                foodIdx = foodMapping[food]
+                dist2[siteIdx][foodIdx] = tmpDist[food]
+        # print('Dist2', dist2)
+        self.heuristicInfo['dist2'] = dist2
+        
+
+        # 算出各个糖之间的曼哈顿距离
+        dist1 = zeros((len(foods), len(foods)))
+        # for outer in range(len(foods)):
+        #     for inner in range(len(foods)):
+        #         dist1[outer][inner] = util.manhattanDistance((foods[outer][0], foods[outer][1]), (foods[inner][0], foods[inner][1]))
+        #     dist1[outer][outer] = inf
+        # print('Dist1', dist1)
+        for foodOuter in foods:
+            outerIdx = foodMapping[foodOuter]
+            outerSiteIdx = siteMapping[foodOuter]
+            for foodInner in foods:
+                innerIdx = foodMapping[foodInner]
+                dist1[outerIdx][innerIdx] = dist2[outerSiteIdx][innerIdx]
+            dist1[outerIdx][outerIdx] = inf
+        self.heuristicInfo['dist1'] = dist1
+        # print('Dist1\n', dist1)
+        self.heuristicInfo['count'] = {'minSum': 0, 'maxSingle': 0, 'maxSinglePlus': 0}
+    
     def getStartState(self):
         return self.start
 
@@ -469,6 +538,44 @@ class FoodSearchProblem:
                 return 999999
             cost += 1
         return cost
+    
+    def ownGetSuccessors(self, state):
+        successors = []
+        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+            x,y = state[0]
+            dx, dy = Actions.directionToVector(direction)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextFood = state[1].copy()
+                nextFood[nextx][nexty] = False
+                successors.append( ( ((nextx, nexty), nextFood), direction, 1) )
+        return successors
+
+    def breadFirst(self, startPosition):
+        self.foods = self.startingGameState.getFood()
+        self.walls = self.startingGameState.getWalls()
+        top, right = self.walls.height, self.walls.width
+        
+        positions = util.Queue()
+        route = []
+        distMapping = {(x, y): inf for x in range(1, right-1) for y in range(1, top-1)}
+        
+        positions.push(startPosition)
+        distMapping[startPosition] = 0
+        
+        while not positions.isEmpty():
+            current_position = positions.pop()
+            # print('current_position: ', current_position)
+            if current_position not in route:
+                route.append(current_position)
+                # print('next')
+                for position, direction, value in self.ownGetSuccessors([current_position, self.foods]):
+                    positions.push(position[0])
+                    distMapping[position[0]] = min(distMapping[position[0]], distMapping[current_position]+1)
+                    # print(position[0], distMapping[position[0]])
+                
+        # exit()
+        return distMapping
 
 class AStarFoodSearchAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -506,7 +613,110 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    top, right = problem.walls.height, problem.walls.width
+    positionIdx = problem.heuristicInfo['siteMapping'][position]
+    foodMapping = problem.heuristicInfo['foodMapping']
+    dist1 = problem.heuristicInfo['dist1']
+    dist2 = problem.heuristicInfo['dist2']
+
+    foods = []
+    cost1 = inf
+    cost2 = 0
+
+    nearest = (-1, -1)      # “距离”糖豆人最近的糖豆的“距离”
+    nearestDist = inf
+    for x in range(1, right): 
+        for y in range(1, top):
+            if foodGrid[x][y] == True:      # 用TRUE表示有糖，False表示无糖
+                foodIdx = foodMapping[(x, y)]
+                if dist2[positionIdx][foodIdx] < nearestDist:
+                    nearest = (x, y)
+                    nearestDist = dist2[positionIdx][foodIdx]
+                foods.append((x, y))
+    cost1 = nearestDist     # 没有豆子时，cost2此时为inf
+    cost2 = nearestDist     # 没有豆子时，cost2此时为inf
+  
+    # 记录到从糖i(i=1,...,n)到指定糖j的“距离”最小值
+    # min Sum
+    foodsIdx = [foodMapping[food] for food in foods]
+    tmp = [0]
+    for food in foods:
+        idx = foodMapping[food]
+        if food != nearest:
+            tmp.append(min(dist1[idx][foodsIdx]))
+        else:
+            cost1 += min(min(dist1[idx][foodsIdx]), 0)
+    cost1 += sum(tmp) - max(tmp)
+    cost1 = cost1 if cost1 != inf else 0
+
+    # 记录豆子之间的单个最大“距离”，并记录最大距离对应的豆子编号
+    maxSingle = 0
+    records = []
+    for i in foodsIdx:
+        for j in foodsIdx:
+            if j == i:
+                continue
+            # maxSingle = max(maxSingle, dist1[i][j])
+            if dist1[i][j] >= maxSingle:
+                maxSingle = dist1[i][j]
+                records.append((i, j))
+    
+    # 如果存在两个及以上豆子，则 cost2 = maxSingle + 糖豆人现有豆子的最小距离
+    # 如果只有一个豆子，则 coct2 = 糖豆人到豆子的最小距离
+    # 如果没有豆子，则 cost2 = 0
+    cost2 += maxSingle
+    cost2 = cost2 if cost2 != inf else 0
+
+
+    # 如果存在两个及以上豆子，则 cost3 = maxSingle + 糖豆人到maxSingle对应豆子的最小距离
+        # (如果有多对豆子之间的距离同为最大值，则这些豆子都是maxSingle对应豆子)
+    # 如果只有一个豆子，则 coct3 = 糖豆人到豆子的最小距离
+    # 如果没有豆子，则 cost3 = 0
+    cost3 = 0
+    cost3 += maxSingle
+    t_min = inf
+    for record in records:
+        t_min = min(t_min, min(dist2[positionIdx][record[0]], dist2[positionIdx][record[1]]))
+    cost3 += t_min      
+    if cost3 == inf:        # 此时如果cost3为inf，说明地图上只存在1个豆子或0个豆子
+        if nearestDist != inf:  # 对应还有1个豆子
+            cost3 = nearestDist 
+        else:                   # 对应没有豆子
+            cost3 = 0           
+
+    cost = [cost1, cost2, cost3]
+    problem.heuristicInfo['count']['minSum']        += argmax(cost) == 0
+    problem.heuristicInfo['count']['maxSingle']     += argmax(cost) == 1
+    problem.heuristicInfo['count']['maxSinglePlus'] += argmax(cost) == 2
+
+    # print(problem.heuristicInfo['count'])
+    return max(cost)
+
+    
+    # 以下部分是俊鸿的一些思路
+    # top, right = problem.walls.height-2, problem.walls.width-2
+    # cost = 0
+    # mincost = inf
+    # minx = right
+    # maxx = 0
+    # miny = top
+    # maxy = 0
+    # for foodx in range(1, right+1):
+    #     for foody in range(1, top+1):
+    #         if foodGrid[foodx][foody] == 1:
+    #             cost = max(cost, util.manhattanDistance((foodx,foody),position))
+    #             minx = min(foodx,minx)
+    #             maxx = max(foodx,maxx)
+    #             miny = min(foody,miny)
+    #             maxy = max(foody,maxy)
+    #             if util.manhattanDistance((foodx,foody),position) <= mincost:
+    #                 mincost = util.manhattanDistance((foodx,foody),position)
+    
+    # cost2 = max(cost,state[1].count()-1+mincost,maxx - minx + maxy - miny + mincost)
+    # if mincost == inf:
+    #     cost2 = max(cost,state[1].count(),maxx - minx + maxy - miny +1)
+
+    # return max(cost1, cost2)
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
